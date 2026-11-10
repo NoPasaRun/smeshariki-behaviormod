@@ -3,7 +3,7 @@
 	"id": "behaviormod",
 	"version": "${version}",
 	"name": "BehaviorMod",
-	"description": "Поведение персонажей смешариков: напарник, приказы, диалоги.",
+	"description": "Поведение персонажей смешариков: напарник, приказы, диалоги и кат-сцены (запись, редактор, показ).",
 	"authors": ["bogdan"],
 	"license": "MIT",
 	"environment": "*",
@@ -17,6 +17,7 @@
 		"minecraft": "~26.2",
 		"java": ">=25",
 		"fabric-api": "*",
-		"gameplaymod": "*"
+		"gameplaymod": "*",
+		"smesharikiworld": "*"
 	}
 }

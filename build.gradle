@@ -23,6 +23,8 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	// GameplayMod (персонажи, стропы, шар, мост механик): собранный jar лежит рядом. Пересобирайте его (./gradlew jar в GameplayMod) перед сборкой этого мода.
 	implementation files("../GameplayMod/build/libs/gameplaymod-1.0.0.jar")
+	// SmesharikiWorldMod (приглушение света на время кат-сцены, ViewLight): так же, собирать раньше этого мода.
+	implementation files("../SmesharikiWorldMod/build/libs/smesharikiworld-1.0.0.jar")
 }
 
 processResources {

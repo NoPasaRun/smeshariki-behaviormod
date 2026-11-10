@@ -11,7 +11,7 @@ import com.smeshariki.behavior.cutscene.CutsceneSkip;
 import com.smeshariki.behavior.cutscene.LineKey;
 import com.smeshariki.behavior.cutscene.ViewCenter;
 import com.smeshariki.behavior.cutscene.SoundKey;
-import com.smeshariki.gameplay.api.ViewLight;
+import com.smeshariki.world.ViewLight;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
