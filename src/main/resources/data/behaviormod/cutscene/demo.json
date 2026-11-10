@@ -1,0 +1,8 @@
+{
+	"length": 120,
+	"camera": [
+		{ "tick": 0, "pos": [6, 3, 0], "yaw": 90, "pitch": 15, "fov": 70 },
+		{ "tick": 60, "pos": [0, 4, 6], "yaw": 180, "pitch": 20, "fov": 50 },
+		{ "tick": 120, "pos": [-6, 3, 0], "yaw": 270, "pitch": 10, "fov": 70, "ease": "linear" }
+	]
+}
