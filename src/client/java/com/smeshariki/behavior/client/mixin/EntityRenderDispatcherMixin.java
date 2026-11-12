@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.entity.Entity;
 
-/** Настоящий персонаж, у которого в сцене есть кукла, не рисуется: иначе он стоял бы рядом со своей копией. */
+/** Настоящий персонаж, у которого в сцене есть кукла, не рисуется (иначе он стоял бы рядом со своей копией); игроки на сцене не рисуются вовсе. */
 @Mixin(EntityRenderDispatcher.class)
 public abstract class EntityRenderDispatcherMixin {
 	@Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)

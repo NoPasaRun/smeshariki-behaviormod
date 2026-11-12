@@ -54,6 +54,11 @@ final class Recorder {
 		final Map<Identifier, CompoundTag> snapshots = new HashMap<>();
 		final List<Frame> frames = new ArrayList<>();
 		int countdown = COUNTDOWN;
+		/** Через сколько тиков без движения запись кончается сама (0 — только вручную). */
+		int autoStop;
+		/** Было ли уже движение (до него простой не считается: игрок ещё встаёт на место) и номер последнего кадра с движением. */
+		boolean started;
+		int lastActive;
 
 		Session(Identifier id, Cutscene scene, int startTick, boolean edit, Vec3 startPos, float startYaw, ResourceKey<Level> dimension, Identifier character) {
 			this.id = id;
@@ -93,7 +98,7 @@ final class Recorder {
 
 	/** @return причина отказа или {@code null} — отсчёт пошёл */
 	@Nullable
-	static String begin(ServerPlayer player, Identifier id, int startTick, boolean edit) {
+	static String begin(ServerPlayer player, Identifier id, int startTick, boolean edit, int autoStopSeconds) {
 		if (!Cutscenes.isHost(player)) return "Записывать может только хост.";
 		if (Cutscenes.busy(player.getUUID())) return "Сначала закончи сцену или запись.";
 		if (!(CharacterEntity.body(player) instanceof CharacterEntity body)) return "Записывать можно только персонажем: сначала выбери смешарика.";
@@ -111,8 +116,11 @@ final class Recorder {
 				BehaviorMod.LOGGER.warn("Снимок {} не снялся", e.getKey(), ex);
 			}
 		}
+		s.autoStop = Math.max(0, autoStopSeconds) * 20;
+		Cutscenes.keepArea(player, scene.anchor().orElse(pos));
 		SESSIONS.put(player.getUUID(), s);
-		player.sendSystemMessage(Component.literal("Запись " + id + " с тика " + startTick + " (" + s.character + "). Остановить — Backspace или /cutscene stop."));
+		player.sendSystemMessage(Component.literal("Запись " + id + " с тика " + startTick + " (" + s.character + "). Остановить — Backspace или /cutscene stop"
+				+ (s.autoStop > 0 ? ", либо сама кончится, когда простоишь " + autoStopSeconds + " с после движения." : ".")));
 		return null;
 	}
 
@@ -134,9 +142,30 @@ final class Recorder {
 			int flags = 0;
 			if (player.isShiftKeyDown() || body.isCrouching()) flags |= Frame.CROUCH;
 			if (player.swinging && player.swingTime == 0) flags |= Frame.SWING;
-			s.frames.add(new Frame((float) p.x, (float) p.y, (float) p.z, body.getYRot(), player.getYRot(), player.getXRot(), flags));
-			if (s.startTick + s.frames.size() >= Cutscene.MAX_LENGTH) finish(uuid, server, true);
+			Frame frame = new Frame((float) p.x, (float) p.y, (float) p.z, body.getYRot(), player.getYRot(), player.getXRot(), flags);
+			Frame prev = s.frames.isEmpty() ? null : s.frames.getLast();
+			s.frames.add(frame);
+			if (prev != null && active(prev, frame)) {
+				s.started = true;
+				s.lastActive = s.frames.size() - 1;
+			}
+			if (s.startTick + s.frames.size() >= Cutscene.MAX_LENGTH) {
+				finish(uuid, server, true);
+			} else if (s.autoStop > 0 && s.started && s.frames.size() - 1 - s.lastActive >= s.autoStop) {
+				// простоял достаточно после движения: лишнее ожидание отрезаем, оставляя полсекунды «послевкусия»
+				int keep = Math.min(s.frames.size(), s.lastActive + 1 + 10);
+				s.frames.subList(keep, s.frames.size()).clear();
+				player.sendOverlayMessage(Component.literal("Запись остановлена: стоишь на месте."));
+				finish(uuid, server, true);
+			}
 		}
+	}
+
+	/** Что-то изменилось между кадрами: сдвиг тела, поворот тела или головы, удар, приседание. Стоящий неподвижно персонаж — не движение. */
+	private static boolean active(Frame a, Frame b) {
+		double dx = a.x() - b.x(), dy = a.y() - b.y(), dz = a.z() - b.z();
+		return dx * dx + dy * dy + dz * dz > 0.0004 || Math.abs(net.minecraft.util.Mth.wrapDegrees(a.yaw() - b.yaw())) > 0.5f
+				|| Math.abs(net.minecraft.util.Mth.wrapDegrees(a.headYaw() - b.headYaw())) > 0.5f || Math.abs(a.pitch() - b.pitch()) > 0.5f || a.flags() != b.flags();
 	}
 
 	/** Отсчёт кончился: мир к началу, игрок на месте, остальные актёры пошли. */

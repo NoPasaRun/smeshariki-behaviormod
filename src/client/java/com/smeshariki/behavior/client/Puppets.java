@@ -52,6 +52,8 @@ final class Puppets {
 
 	/** Не рисовать ли настоящего персонажа: у него есть кукла в этой сцене. */
 	static boolean hidesReal(Entity entity) {
+		// самих игроков (их модели) на сцене не показываем: в кадре только персонажи; игра идёт персонажем (тело — не игрок), так что запись дубля не страдает
+		if (entity instanceof net.minecraft.world.entity.player.Player && CutsceneClient.mode() != CutsceneClient.Mode.NONE) return true;
 		if (hidden.isEmpty() || is(entity)) return false;
 		return hidden.contains(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
 	}

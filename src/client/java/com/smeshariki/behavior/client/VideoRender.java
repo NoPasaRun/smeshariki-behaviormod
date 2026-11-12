@@ -21,7 +21,7 @@ import net.minecraft.resources.Identifier;
 /**
  * Покадровая съёмка сцены в видео (как в Replay Mod): время сцены идёт не по часам, а по номеру кадра — кадр {@code n} это тик {@code n·20/fps}, —
  * поэтому камера, куклы и свет точно такие, как должны быть, как бы медленно ни считались тяжёлые шейдеры (в том числе с трассировкой через Iris).
- * Каждый кадр после отрисовки уходит в PNG ({@code <папка игры>/cutscene-render/<сцена>-<время>/frame_000001.png}); если в системе есть {@code ffmpeg}, в конце
+ * Каждый кадр после отрисовки уходит в PNG ({@code <папка игры>/data/behaviormod/render/<сцена>-<время>/frame_000001.png}); если в системе есть {@code ffmpeg}, в конце
  * из них собирается {@code scene.mp4}. Размер кадра — размер окна. Мир вокруг сцены идёт в обычном времени (кроме кукол), так что съёмка годится
  * для сцен, где важны камера, актёры и свет; действия мира сервер выполняет по своим тикам.
  */
@@ -52,7 +52,7 @@ final class VideoRender {
 		lastTick = 0;
 		id = sceneId;
 		try {
-			dir = mc.gameDirectory.toPath().resolve("cutscene-render").resolve(sceneId.getNamespace() + "-" + sceneId.getPath().replace('/', '_') + "-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
+			dir = com.smeshariki.behavior.ModData.moved(com.smeshariki.behavior.ModData.game("cutscene-render"), com.smeshariki.behavior.ModData.dir().resolve("render")).resolve(sceneId.getNamespace() + "-" + sceneId.getPath().replace('/', '_') + "-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
 			Files.createDirectories(dir);
 		} catch (java.io.IOException e) {
 			BehaviorMod.LOGGER.warn("Папка съёмки не создалась", e);

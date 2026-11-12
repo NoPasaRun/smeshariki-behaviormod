@@ -8,9 +8,10 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Ключевой кадр камеры («стоп»): на тике {@code tick} камера стоит в {@code pos} (от точки привязки сцены), смотрит {@code yaw}/{@code pitch}, крен {@code roll},
- * угол {@code fov}. {@code ease} — функция из {@link Easings}, по которой камера идёт от этого кадра к следующему (в файле {@code "smooth"} значит {@code behaviormod:smooth}).
+ * угол {@code fov}. {@code along} — от этого кадра до следующего камера смотрит вдоль пути (направление движения, плавно меняется на поворотах), а {@code yaw}/{@code pitch}
+ * кадра в этом отрезке не используются. {@code ease} — функция из {@link Easings}, по которой камера идёт от этого кадра к следующему (в файле {@code "smooth"} значит {@code behaviormod:smooth}).
  */
-public record CameraKey(int tick, Vec3 pos, float yaw, float pitch, float roll, float fov, Identifier ease) {
+public record CameraKey(int tick, Vec3 pos, float yaw, float pitch, float roll, float fov, Identifier ease, boolean along) {
 	private static final Codec<Identifier> EASE_CODEC = Codec.STRING.xmap(Easings::parse, id -> id.getNamespace().equals("behaviormod") ? id.getPath() : id.toString());
 
 	public static final Codec<CameraKey> CODEC = RecordCodecBuilder.create(i -> i.group(
@@ -20,15 +21,28 @@ public record CameraKey(int tick, Vec3 pos, float yaw, float pitch, float roll, 
 			Codec.FLOAT.optionalFieldOf("pitch", 0f).forGetter(CameraKey::pitch),
 			Codec.FLOAT.optionalFieldOf("roll", 0f).forGetter(CameraKey::roll),
 			Codec.FLOAT.optionalFieldOf("fov", 70f).forGetter(CameraKey::fov),
-			EASE_CODEC.optionalFieldOf("ease", Easings.SMOOTH).forGetter(CameraKey::ease)
+			EASE_CODEC.optionalFieldOf("ease", Easings.SMOOTH).forGetter(CameraKey::ease),
+			Codec.BOOL.optionalFieldOf("along", false).forGetter(CameraKey::along)
 	).apply(i, CameraKey::new));
 
+	public CameraKey(int tick, Vec3 pos, float yaw, float pitch, float roll, float fov, Identifier ease) {
+		this(tick, pos, yaw, pitch, roll, fov, ease, false);
+	}
+
+	public CameraKey atTick(int value) {
+		return new CameraKey(value, pos, yaw, pitch, roll, fov, ease, along);
+	}
+
+	public CameraKey withAlong(boolean value) {
+		return new CameraKey(tick, pos, yaw, pitch, roll, fov, ease, value);
+	}
+
 	public CameraKey withEase(Identifier value) {
-		return new CameraKey(tick, pos, yaw, pitch, roll, fov, value);
+		return new CameraKey(tick, pos, yaw, pitch, roll, fov, value, along);
 	}
 
 	/** Тот же кадр с новым видом (положение, повороты, крен, угол); тик и функция прежние. */
 	public CameraKey withView(Vec3 newPos, float newYaw, float newPitch, float newRoll, float newFov) {
-		return new CameraKey(tick, newPos, newYaw, newPitch, newRoll, newFov, ease);
+		return new CameraKey(tick, newPos, newYaw, newPitch, newRoll, newFov, ease, along);
 	}
 }

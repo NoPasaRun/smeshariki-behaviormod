@@ -46,6 +46,15 @@ public record Clip(int start, List<Frame> frames, boolean muted, String label) {
 		return new Clip(start, frames, value, label);
 	}
 
+	/** Вырезать тики {@code [from, to]} включительно: остаются до одного куска слева и справа (кадры не сдвигаются). */
+	public List<Clip> without(int from, int to) {
+		List<Clip> out = new java.util.ArrayList<>();
+		Clip left = trimmed(0, from), right = trimmed(to + 1, Integer.MAX_VALUE);
+		if (left != null) out.add(left);
+		if (right != null) out.add(right);
+		return out;
+	}
+
 	/** Обрезка по тикам сцены: остаётся кусок {@code [from, to)}; пустой — {@code null}. */
 	@Nullable
 	public Clip trimmed(int from, int to) {

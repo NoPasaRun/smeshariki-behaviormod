@@ -2,6 +2,6 @@
 	"required": true,
 	"package": "com.smeshariki.behavior.client.mixin",
 	"compatibilityLevel": "JAVA_25",
-	"client": ["CameraMixin", "KeyboardInputMixin", "MouseHandlerMixin", "MinecraftMixin", "EntityRenderDispatcherMixin", "ClientLevelMixin", "GameRendererMixin"],
+	"client": ["CameraMixin", "KeyboardInputMixin", "MouseHandlerMixin", "KeyboardHandlerMixin", "SoundManagerMixin", "MinecraftMixin", "EntityRenderDispatcherMixin", "ClientLevelMixin", "GameRendererMixin", "OptionsMixin"],
 	"injectors": { "defaultRequire": 1 }
 }

@@ -11,7 +11,6 @@ import com.smeshariki.behavior.cutscene.CutsceneSkip;
 import com.smeshariki.behavior.cutscene.LineKey;
 import com.smeshariki.behavior.cutscene.ViewCenter;
 import com.smeshariki.behavior.cutscene.SoundKey;
-import com.smeshariki.world.ViewLight;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -49,7 +48,6 @@ public final class CutsceneClient {
 	/** Кого играет сам игрок при записи: его куклы нет, а настоящий персонаж виден. */
 	@Nullable
 	static Identifier recording;
-	private static boolean lightOn;
 	/** Где камера сцены в последнем кадре (нет — камера у игрока) и что мы сообщили серверу. */
 	@Nullable
 	private static Vec3 viewPos;
@@ -66,6 +64,39 @@ public final class CutsceneClient {
 
 	public static Mode mode() {
 		return mode;
+	}
+
+	private static boolean wasSilent;
+
+	/** Идёт ли сцена, под которую ванильную фоновую музыку и эмбиент надо выключить: показ, запись дубля, пуск в редакторе (пауза редактора — звуки игры возвращаются). */
+	public static boolean silenceVanilla() {
+		return mode == Mode.WATCH || mode == Mode.RECORD || (mode == Mode.EDIT && CutsceneEditor.playing);
+	}
+
+	/** Не запускать этот звук: ванильная музыка и эмбиент во время сцены (свой саундтрек сцены можно). */
+	public static boolean blocksVanilla(net.minecraft.client.resources.sounds.SoundInstance sound) {
+		if (!silenceVanilla()) return false;
+		net.minecraft.sounds.SoundSource source = sound.getSource();
+		return (source == net.minecraft.sounds.SoundSource.MUSIC || source == net.minecraft.sounds.SoundSource.AMBIENT) && !Soundtrack.isTrack(sound);
+	}
+
+	/** Редактор открыт в режиме камеры (курсор захвачен, окна нет). */
+	public static boolean editorFocused() {
+		return mode == Mode.EDIT && CutsceneEditor.focused && Minecraft.getInstance().gui.screen() == null;
+	}
+
+	/** Мышь сдвинулась в режиме камеры редактора: {@code dx, dy} — накопленные пиксели, как у игрока в игре. */
+	public static void editorLook(double dx, double dy) {
+		if (!editorFocused() || (dx == 0 && dy == 0)) return;
+		Minecraft mc = Minecraft.getInstance();
+		double s = mc.options.sensitivity().get() * 0.6 + 0.2;
+		double k = s * s * s * 8.0;
+		CutsceneEditor.look(dx * k * (mc.options.invertMouseX().get() ? -1 : 1), dy * k * (mc.options.invertMouseY().get() ? -1 : 1));
+	}
+
+	/** Нажатие клавиши в режиме камеры редактора. @return редактор забрал клавишу */
+	public static boolean editorKey(net.minecraft.client.input.KeyEvent event) {
+		return editorFocused() && CutsceneEditor.focusedKey(event);
 	}
 
 	/** Время сцены в тиках с долей. */
@@ -98,15 +129,42 @@ public final class CutsceneClient {
 		return result;
 	}
 
+	/** Свет сцены сейчас: −1 чёрный экран, 0 нет, 1 белый (рисует {@link #drawLight}). */
+	private static float lightLevel;
+
 	private static void light(float time) {
-		float d = scene == null ? -1 : scene.darkness(time);
-		if (d >= 0) {
-			ViewLight.set(1f, d);
-			lightOn = true;
-		} else if (lightOn) {
-			ViewLight.set(0f, 0f);
-			lightOn = false;
-		}
+		// в редакторе на паузе экран не затягивается (иначе при −1 ничего не видно и не поправить): только при пуске и просмотре из сцены
+		boolean live = mode == Mode.WATCH || mode == Mode.RECORD || (mode == Mode.EDIT && (CutsceneEditor.playing || CutsceneEditor.lookThrough));
+		float v = scene == null || !live ? Float.NaN : scene.lightLevel(time);
+		lightLevel = Float.isNaN(v) ? 0f : v;
+	}
+
+	/**
+	 * Кинополосы: чёрные полосы сверху и снизу, пока экран шире, чем {@code scene.aspect()} (отношение ширины к высоте кадра, 2.39 — «кино»). Выезжают за 10 тиков
+	 * от начала и уезжают за 10 тиков до конца. При показе — всегда, в редакторе — при пуске и «взгляде из сцены» (на паузе они мешали бы править).
+	 */
+	private static void drawBars(net.minecraft.client.gui.GuiGraphicsExtractor g, net.minecraft.client.DeltaTracker delta) {
+		Cutscene s = scene;
+		if (s == null || s.aspect() <= 0f) return;
+		boolean live = mode == Mode.WATCH || (mode == Mode.EDIT && (CutsceneEditor.playing || CutsceneEditor.lookThrough));
+		if (!live) return;
+		int w = g.guiWidth(), h = g.guiHeight();
+		float bar = (h - w / s.aspect()) / 2f;
+		if (bar <= 0f) return;
+		float t = time();
+		float p = Math.max(0f, Math.min(1f, Math.min(t, s.length() - t) / 10f));
+		p = p * p * (3f - 2f * p);
+		int bh = Math.round(bar * p);
+		if (bh <= 0) return;
+		g.fill(0, 0, w, bh, 0xFF000000);
+		g.fill(0, h - bh, w, h, 0xFF000000);
+	}
+
+	/** Затяжка экрана чёрным (отрицательный свет) или белым (положительный): −1 и 1 — сплошной цвет. Под полосой времени и окнами. */
+	private static void drawLight(net.minecraft.client.gui.GuiGraphicsExtractor g, net.minecraft.client.DeltaTracker delta) {
+		if (lightLevel == 0f || mode == Mode.NONE) return;
+		int alpha = Math.round(Math.min(1f, Math.abs(lightLevel)) * 255);
+		g.fill(0, 0, g.guiWidth(), g.guiHeight(), alpha << 24 | (lightLevel < 0 ? 0x000000 : 0xFFFFFF));
 	}
 
 	static void start(Mode newMode, Identifier newId, Cutscene newScene, Vec3 newOrigin, int at, @Nullable Identifier played) {
@@ -131,6 +189,7 @@ public final class CutsceneClient {
 
 	private static void stopQuiet() {
 		if (mode == Mode.NONE) return;
+		Soundtrack.stopAll();
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.gui.screen() instanceof EditorScreen) mc.gui.setScreen(null);
 		viewPos = null;
@@ -139,10 +198,7 @@ public final class CutsceneClient {
 		scene = null;
 		recording = null;
 		Puppets.clear();
-		if (lightOn) {
-			ViewLight.set(0f, 0f);
-			lightOn = false;
-		}
+		lightLevel = 0f;
 	}
 
 	static void init() {
@@ -173,6 +229,8 @@ public final class CutsceneClient {
 		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, original -> (graphics, delta) -> {
 			if (!active()) original.extractRenderState(graphics, delta);
 		});
+		HudElementRegistry.attachElementBefore(VanillaHudElements.HOTBAR, BehaviorMod.id("light"), CutsceneClient::drawLight);
+		HudElementRegistry.attachElementBefore(VanillaHudElements.HOTBAR, BehaviorMod.id("bars"), CutsceneClient::drawBars);
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR, BehaviorMod.id("timeline"), TimelineHud::extract);
 	}
 
@@ -180,7 +238,12 @@ public final class CutsceneClient {
 	private static void tick(Minecraft mc) {
 		boolean pressed = false;
 		while (SKIP.consumeClick()) pressed = true;
+		// сцена началась — играющую ванильную музыку обрываем (новая блокируется в SoundManagerMixin)
+		boolean silent = silenceVanilla();
+		if (silent && !wasSilent) mc.getMusicManager().stopPlaying();
+		wasSilent = silent;
 		if (mode == Mode.NONE || scene == null) return;
+		Soundtrack.tick();
 		if (mc.player != null && mc.player.tickCount % 5 == 0) sendView();
 		if (mode == Mode.EDIT) {
 			CutsceneEditor.tick(mc);
@@ -198,6 +261,11 @@ public final class CutsceneClient {
 		if (tick > scene.length() + 100) stop();
 	}
 
+	/** Дальность показа текущей сцены, чанков (0 — как у игрока): читает {@code OptionsMixin}. Только настоящий показ, не редактор и не запись. */
+	public static int streamDistance() {
+		return mode == Mode.WATCH && scene != null ? scene.distance() : 0;
+	}
+
 	/** Сообщить серверу, где камера (раз в 5 тиков) или что она вернулась к игроку: вокруг камеры сервер грузит чанки. */
 	private static void sendView() {
 		if (viewPos != null) {
@@ -213,6 +281,7 @@ public final class CutsceneClient {
 	static void sounds(int from, int to) {
 		Minecraft mc = Minecraft.getInstance();
 		if (scene == null || mc.level == null) return;
+		Soundtrack.start(scene, from, to);
 		for (SoundKey key : scene.sounds()) {
 			if (key.tick() <= from || key.tick() > to) continue;
 			SoundEvent event = SoundEvent.createVariableRangeEvent(key.sound());

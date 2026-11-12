@@ -5,6 +5,7 @@ import java.util.List;
 import org.lwjgl.glfw.GLFW;
 
 import com.smeshariki.behavior.BehaviorMod;
+import com.smeshariki.behavior.cutscene.CutsceneList;
 import com.smeshariki.behavior.dialog.DialogChoice;
 import com.smeshariki.behavior.dialog.DialogReplies;
 
@@ -21,7 +22,9 @@ import net.minecraft.network.chat.Component;
 
 public class BehaviorModClient implements ClientModInitializer {
 	static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(BehaviorMod.id("main"));
-	static final KeyMapping TALK = KeyMappingHelper.registerKeyMapping(new KeyMapping("key." + BehaviorMod.NAMESPACE + ".talk", GLFW.GLFW_KEY_K, CATEGORY));
+	static final KeyMapping TALK = KeyMappingHelper.registerKeyMapping(new KeyMapping("key." + BehaviorMod.NAMESPACE + ".reply", GLFW.GLFW_KEY_J, CATEGORY));
+	/** Режим управления кат-сценами: реестр с кнопками «играть / править / удалить». Ключ `scenes`, а не `edit_*`: старые значения из options.txt не мешают. */
+	static final KeyMapping MANAGER = KeyMappingHelper.registerKeyMapping(new KeyMapping("key." + BehaviorMod.NAMESPACE + ".scenes", GLFW.GLFW_KEY_N, CATEGORY));
 
 	/** Последний список реплик от сервера. */
 	static List<Component> replies = List.of();
@@ -37,6 +40,7 @@ public class BehaviorModClient implements ClientModInitializer {
 			version = msg.version();
 			if (replies.isEmpty()) open = false;
 		});
+		ClientPlayNetworking.registerGlobalReceiver(CutsceneList.TYPE, (msg, ctx) -> ctx.client().execute(() -> CutsceneManagerScreen.received(msg)));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			replies = List.of();
 			version = 0;
@@ -51,6 +55,9 @@ public class BehaviorModClient implements ClientModInitializer {
 	private static void tick(Minecraft mc) {
 		boolean pressed = false;
 		while (TALK.consumeClick()) pressed = true;
+		boolean scenes = false;
+		while (MANAGER.consumeClick()) scenes = true;
+		if (scenes) CutsceneManagerScreen.toggle();
 		if (mc.player == null || mc.gui.screen() != null) return;
 		if (replies.isEmpty()) open = false;
 		if (pressed) open = !open && !replies.isEmpty();

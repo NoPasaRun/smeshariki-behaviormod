@@ -17,14 +17,23 @@ loom {
 	}
 }
 
+repositories {
+	mavenCentral()
+}
+
 dependencies {
+	// Декодер MP3 (JLayer, LGPL): саундтрек из файлов .mp3 играет сам мод, игра понимает только .ogg. Упаковывается в jar мода.
+	implementation "com.googlecode.soundlibs:jlayer:1.0.1.4"
+	include "com.googlecode.soundlibs:jlayer:1.0.1.4"
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	// UiLib (общий интерфейс: Scroller, ListScreen, SelectScreen, палитра): собранный jar лежит рядом, собирать его первым.
+	implementation files("../UiLib/build/libs/uilib-1.0.0.jar")
 	// GameplayMod (персонажи, стропы, шар, мост механик): собранный jar лежит рядом. Пересобирайте его (./gradlew jar в GameplayMod) перед сборкой этого мода.
 	implementation files("../GameplayMod/build/libs/gameplaymod-1.0.0.jar")
-	// SmesharikiWorldMod (приглушение света на время кат-сцены, ViewLight): так же, собирать раньше этого мода.
-	implementation files("../SmesharikiWorldMod/build/libs/smesharikiworld-1.0.0.jar")
+	// WorldMod (приглушение света на время кат-сцены, ViewLight): так же, собирать раньше этого мода.
+	implementation files("../WorldMod/build/libs/worldmod-1.0.0.jar")
 }
 
 processResources {

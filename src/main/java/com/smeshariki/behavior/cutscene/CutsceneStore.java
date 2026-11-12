@@ -76,11 +76,14 @@ final class CutsceneStore {
 		}
 	}
 
+	/** @return файла больше нет (его могло и не быть) */
 	static boolean delete(MinecraftServer server, Identifier id) {
+		Path file = file(server, id);
 		try {
-			return Files.deleteIfExists(file(server, id));
+			Files.deleteIfExists(file);
 		} catch (IOException e) {
-			return false;
+			BehaviorMod.LOGGER.warn("Сцена {} не удалилась", id, e);
 		}
+		return !Files.exists(file);
 	}
 }
