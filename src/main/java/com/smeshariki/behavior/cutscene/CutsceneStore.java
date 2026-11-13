@@ -19,7 +19,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 
 /**
- * Сцены мира, записанные и правленные в игре: по файлу на сцену, {@code <мир>/behaviormod/cutscenes/<пространство>/<имя>.dat}, сжатый NBT.
+ * Сцены мира, записанные и правленные в игре: по файлу на сцену, {@code <мир>/data/behaviormod/cutscenes/<пространство>/<имя>.dat}, сжатый NBT.
  * Сцены из jar и датапаков лежат отдельно и только читаются; сцена мира с тем же id их закрывает.
  */
 final class CutsceneStore {
@@ -27,7 +27,14 @@ final class CutsceneStore {
 	}
 
 	private static Path root(MinecraftServer server) {
-		return server.getWorldPath(LevelResource.ROOT).resolve("behaviormod").resolve("cutscenes");
+		// раньше <мир>/behaviormod/cutscenes (переносится при первом обращении)
+		Path old = server.getWorldPath(LevelResource.ROOT).resolve("behaviormod");
+		Path now = com.smeshariki.mod.WorldData.path(server, "behaviormod", "cutscenes", "behaviormod/cutscenes");
+		try {
+			if (Files.isDirectory(old) && Files.list(old).findAny().isEmpty()) Files.delete(old);
+		} catch (java.io.IOException ignored) {
+		}
+		return now;
 	}
 
 	private static Path file(MinecraftServer server, Identifier id) {
