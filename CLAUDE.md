@@ -1,11 +1,11 @@
 # BehaviorMod
 
-Поведение персонажей смешариков: напарник, приказы ему, окно реплик. Minecraft 26.2, Java 25, Fabric (Loom). Id мода и пространство имён — `behaviormod`, пакет `com.smeshariki.behavior`. Зависит от `uilib` (общий интерфейс окон: `ListScreen`, `PromptScreen`, палитра `Ui`, см. `../UiLib/CLAUDE.md`), `gameplaymod` (персонажи, стропы, шар, `api/Mechanics.Params`) и `smesharikiworld` (`ViewLight`: приглушение света на время кат-сцены); от него зависит LevelMod. Карта проекта — `../CLAUDE.md`. Механики мира (шар, лава, ветер) — в GameplayMod, уровни и миссии — в LevelMod; дубли с ними не создавать. Мод выделен из GameplayMod, чтобы тот не разрастался (решение пользователя 2026-11-05).
+Поведение персонажей смешариков: напарник, приказы ему, окно реплик. Minecraft 26.2, Java 25, Fabric (Loom). Id мода и пространство имён — `behaviormod`, пакет `com.smeshariki.behavior`. Зависит от `smesharikimod` (общий интерфейс окон `com.smeshariki.ui`: `ListScreen`, `PromptScreen`, палитра `Ui`, см. `../SmesharikiMod/CLAUDE.md`), `gameplaymod` (персонажи, стропы, шар, `api/Mechanics.Params`) и `smesharikiworld` (`ViewLight`: приглушение света на время кат-сцены); от него зависит LevelMod. Карта проекта — `../CLAUDE.md`. Механики мира (шар, лава, ветер) — в GameplayMod, уровни и миссии — в LevelMod; дубли с ними не создавать. Мод выделен из GameplayMod, чтобы тот не разрастался (решение пользователя 2026-11-05).
 
 ## Правила работы
 
 - **После каждой правки:** собрать (`./gradlew jar`) и положить `build/libs/behaviormod-1.0.0.jar` в `~/.minecraft/mods/behaviormod-1.0.0.jar`. Копировать только атомарно: `cp` во временный `.jar.tmp` в той же папке и `mv -f`. Если сборка не прошла — ничего не копировать и сказать.
-- Перед сборкой собрать UiLib, GameplayMod и SmesharikiWorldMod (компиляция против их jar в `../<Мод>/build/libs/`); после правки API пересобрать LevelMod.
+- Перед сборкой собрать SmesharikiMod, GameplayMod и WorldMod (компиляция против их jar в `../<Мод>/build/libs/`); после правки API пересобрать LevelMod.
 - Память у машины маленькая (7,2 ГБ): собирать без демона (`--no-daemon -Dorg.gradle.jvmargs=-Xmx900m`), тесты — только при закрытой игре.
 - Проверять клиентским gametest (шаблон — копия LevelMod в scratchpad с `fabricApi.configureTests { enableClientGameTests = true }`, тестовый мод с точкой входа `fabric-client-gametest`). В рабочем проекте тестов нет.
 - Код: `src/main/java/com/smeshariki/behavior/` (`BehaviorMod` — точка входа), клиент — `src/client/java/.../client/` (`BehaviorModClient`). Ресурсы: `src/main/resources/assets/behaviormod/`.
