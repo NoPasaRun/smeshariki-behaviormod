@@ -62,6 +62,11 @@ public final class CutsceneClient {
 		return mode == Mode.WATCH || mode == Mode.EDIT;
 	}
 
+	/** Идёт показ сцены зрителю: весь интерфейс, кроме самой сцены, прячется (ванильный и панели других модов). Редактор и запись интерфейс сохраняют. */
+	public static boolean hidesHud() {
+		return mode == Mode.WATCH;
+	}
+
 	public static Mode mode() {
 		return mode;
 	}
@@ -229,6 +234,15 @@ public final class CutsceneClient {
 		HudElementRegistry.replaceElement(VanillaHudElements.CROSSHAIR, original -> (graphics, delta) -> {
 			if (!active()) original.extractRenderState(graphics, delta);
 		});
+		// на показе сцены — ничего лишнего: здоровье, голод, чат, эффекты, табло и т. п. (экранные эффекты MISC_OVERLAYS и сон остаются)
+		for (Identifier element : new Identifier[] {VanillaHudElements.SPECTATOR_MENU, VanillaHudElements.ARMOR_BAR, VanillaHudElements.HEALTH_BAR, VanillaHudElements.FOOD_BAR, VanillaHudElements.AIR_BAR,
+				VanillaHudElements.MOUNT_HEALTH, VanillaHudElements.INFO_BAR, VanillaHudElements.EXPERIENCE_LEVEL, VanillaHudElements.HELD_ITEM_TOOLTIP, VanillaHudElements.SPECTATOR_TOOLTIP,
+				VanillaHudElements.MOB_EFFECTS, VanillaHudElements.BOSS_BAR, VanillaHudElements.DEMO_TIMER, VanillaHudElements.SCOREBOARD, VanillaHudElements.OVERLAY_MESSAGE,
+				VanillaHudElements.TITLE_AND_SUBTITLE, VanillaHudElements.CHAT, VanillaHudElements.PLAYER_LIST, VanillaHudElements.SUBTITLES}) {
+			HudElementRegistry.replaceElement(element, original -> (graphics, delta) -> {
+				if (!hidesHud()) original.extractRenderState(graphics, delta);
+			});
+		}
 		HudElementRegistry.attachElementBefore(VanillaHudElements.HOTBAR, BehaviorMod.id("light"), CutsceneClient::drawLight);
 		HudElementRegistry.attachElementBefore(VanillaHudElements.HOTBAR, BehaviorMod.id("bars"), CutsceneClient::drawBars);
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR, BehaviorMod.id("timeline"), TimelineHud::extract);

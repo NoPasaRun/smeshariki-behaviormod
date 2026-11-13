@@ -27,6 +27,7 @@ final class RepliesHud {
 	}
 
 	static void extract(GuiGraphicsExtractor g, DeltaTracker delta) {
+		if (CutsceneClient.hidesHud()) return;
 		Minecraft mc = Minecraft.getInstance();
 		List<Component> replies = BehaviorModClient.replies;
 		if (!BehaviorModClient.open || mc.player == null || replies.isEmpty()) return;

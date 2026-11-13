@@ -13,6 +13,7 @@ final class TalkIcon {
 	}
 
 	static void extract(GuiGraphicsExtractor g, DeltaTracker delta) {
+		if (CutsceneClient.hidesHud()) return;
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.player == null || BehaviorModClient.replies.isEmpty()) return;
 		int screenW = mc.getWindow().getGuiScaledWidth(), screenH = mc.getWindow().getGuiScaledHeight();
