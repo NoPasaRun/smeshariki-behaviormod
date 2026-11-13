@@ -53,6 +53,7 @@ public final class Dialogs {
 
 	public static void init() {
 		PayloadTypeRegistry.clientboundPlay().register(DialogReplies.TYPE, DialogReplies.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(OpenReplies.TYPE, OpenReplies.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(DialogChoice.TYPE, DialogChoice.CODEC);
 		ServerPlayNetworking.registerGlobalReceiver(DialogChoice.TYPE, (msg, ctx) -> choose(ctx.player(), msg));
 		ServerTickEvents.END_SERVER_TICK.register(Dialogs::tick);

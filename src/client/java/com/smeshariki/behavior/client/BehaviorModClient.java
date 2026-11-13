@@ -40,6 +40,8 @@ public class BehaviorModClient implements ClientModInitializer {
 			version = msg.version();
 			if (replies.isEmpty()) open = false;
 		});
+		// разговор начат (Нюша позвала смешарика поговорить): список реплик открывается сам
+		ClientPlayNetworking.registerGlobalReceiver(com.smeshariki.behavior.dialog.OpenReplies.TYPE, (msg, ctx) -> open = !replies.isEmpty());
 		ClientPlayNetworking.registerGlobalReceiver(CutsceneList.TYPE, (msg, ctx) -> ctx.client().execute(() -> CutsceneManagerScreen.received(msg)));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			replies = List.of();

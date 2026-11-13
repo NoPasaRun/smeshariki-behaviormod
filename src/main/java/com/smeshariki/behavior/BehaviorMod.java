@@ -25,5 +25,6 @@ public class BehaviorMod implements ModInitializer {
 		BuiltinOrders.init();
 		Dialogs.init();
 		Cutscenes.init();
+		com.smeshariki.behavior.call.BehaviorCalls.init();
 	}
 }
