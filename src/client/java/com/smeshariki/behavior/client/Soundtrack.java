@@ -99,8 +99,16 @@ final class Soundtrack {
 		Minecraft mc = Minecraft.getInstance();
 		if (key.isFile()) {
 			java.nio.file.Path file = MusicFiles.find(key.file());
+			// ogg из пака мира — у всех одинаково и через звук игры; mp3 — в редакторе (его можно начать с любого места) или когда ogg ещё нет
+			boolean ogg = WorldMusicPack.loaded(key.sound());
+			if (ogg && (file == null || CutsceneClient.mode() != CutsceneClient.Mode.EDIT)) {
+				Track track = new Track(key, scene);
+				PLAYING.add(track);
+				mc.getSoundManager().play(track);
+				return;
+			}
 			if (file == null) {
-				CutsceneEditor.say("Нет файла музыки " + key.file() + " в " + MusicFiles.dir() + ": положи его туда (у каждого, кто смотрит сцену).");
+				CutsceneEditor.say("Нет музыки " + key.file() + ": ни в паке мира (хост ещё не сохранял сцену с этим файлом), ни в " + MusicFiles.dir() + ".");
 				return;
 			}
 			FileTrack track = new FileTrack(key, scene, file, offsetSeconds);

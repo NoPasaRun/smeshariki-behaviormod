@@ -225,7 +225,10 @@ public final class CutsceneClient {
 			});
 		});
 		ClientPlayNetworking.registerGlobalReceiver(CutsceneEnd.TYPE, (msg, ctx) -> ctx.client().execute(CutsceneClient::stop));
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> stop());
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			stop();
+			WorldMusicPack.forget();
+		});
 		ClientTickEvents.END_CLIENT_TICK.register(CutsceneClient::tick);
 		// панель и прицел на сцене не нужны
 		HudElementRegistry.replaceElement(VanillaHudElements.HOTBAR, original -> (graphics, delta) -> {

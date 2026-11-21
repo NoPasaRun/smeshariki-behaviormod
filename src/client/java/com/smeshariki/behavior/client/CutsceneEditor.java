@@ -492,7 +492,7 @@ final class CutsceneEditor {
 			List<MusicKey> keys = new ArrayList<>(scene().music());
 			keys.add(new MusicKey(cursor, end, MusicKey.NONE, Mth.clamp(volume, 0f, 2f), fades[0], fades[1], name));
 			edit(scene().withMusic(keys));
-			say("Музыка " + name + " с тика " + cursor + (end > 0 ? " до " + end : " до конца сцены") + ". В сцене хранится имя файла: положи его в " + MusicFiles.dir() + " у каждого, кто смотрит.");
+			say("Музыка " + name + " с тика " + cursor + (end > 0 ? " до " + end : " до конца сцены") + ". При сохранении сцены хост переведёт файл в ogg и положит в пак мира: зрителям mp3 не нужен.");
 		} catch (NumberFormatException e) {
 			say("Громкость — число; вход/выход плавности (например 20/90) и конец — целые тики.");
 		}
@@ -1439,12 +1439,13 @@ final class CutsceneEditor {
 			if (b == null) b = Easings.get(k.ease());
 			if (b != null) used.put(k.ease(), b);
 		}
-		s = s.withEasings(used);
+		s = WorldMusicPack.prepare(s.withEasings(used));
 		scene = s;
 		CutsceneClient.scene = s;
 		for (CutsceneBlob b : CutsceneBlob.split(id, CutsceneBlob.SAVE, origin, 0, "", s)) ClientPlayNetworking.send(b);
 		dirty = false;
 		say("Отправлено на сохранение.");
+		WorldMusicPack.export(s);
 	}
 
 	/** Записать дубль с курсора: сохранить правки, выйти из редактора (сервер вернёт его после дубля). */
